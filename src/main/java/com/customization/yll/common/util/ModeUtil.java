@@ -26,7 +26,7 @@ public class ModeUtil {
      * 根据建模表名获取到对应的建模id
      *
      * @param tableName 建模表名
-     * @return 建模id
+     * @return 建模id，如果不存在则返回 -1
      */
     public static int getModeIdByTableName(String tableName) {
         return getModeIdByTableName(tableName, new RecordSet());
@@ -42,7 +42,9 @@ public class ModeUtil {
     public static int getModeIdByTableName(String tableName, RecordSet recordSet) {
         String getModeIdSql = "select b.id from workflow_bill a,modeinfo b where a.tablename = ? and b.formid = a.id";
         recordSet.executeQuery(getModeIdSql, tableName);
-        recordSet.next();
+        if (!recordSet.next()) {
+            return -1;
+        }
         return recordSet.getInt("id");
     }
 
