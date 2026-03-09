@@ -89,69 +89,6 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
         return getFieldValueByWay(value, fieldId, getWorkflowFieldDataWay);
     }
 
-    private String getFieldValueByFieldName(String fieldName, String workflowTableName) {
-        String sql = "select " + fieldName + " from " + workflowTableName +
-                " where requestid=?";
-        if (!recordSet.executeQuery(sql, requestId)) {
-            log.error("sql 查询错误，sql:" + sql);
-            return "";
-        }
-        if (!recordSet.next()) {
-            log.warn("无此请求id流程数据，请求id：" + this.requestId);
-            return "";
-        }
-        return recordSet.getString(fieldName);
-    }
-
-    private void setRequestIdAndInit(int requestId) {
-        if (this.requestId == null || this.requestId != requestId
-                || this.workflowTableName == null || this.workflowId == null) {
-            this.requestId = requestId;
-            this.workflowTableName = null;
-            this.workflowId = null;
-            init();
-        }
-    }
-
-    private void init() {
-        recordSet.executeQuery("SELECT workflowid from workflow_requestbase WHERE requestid=?", requestId);
-        if (!recordSet.next()) {
-            log.error("无法根据此请求id查询流程id，请求id：" + requestId);
-            return;
-        }
-        this.workflowId = recordSet.getInt("workflowid");
-        this.workflowTableName = WorkflowUtil.getWorkflowTableName(workflowId, recordSet);
-    }
-
-    private String getFieldValueByWay(String value, int fieldId, GetWorkflowFieldDataWay getWorkflowFieldDataWay) {
-        switch (getWorkflowFieldDataWay) {
-            case SELECTOR_TEXT:
-                return getSelectorText(value, fieldId);
-            case HRM_TEXT:
-                return getHrmText(value);
-            case DEPARTMENT_TEXT:
-                return getDepartmentText(value);
-            case SUB_COMPANY_TEXT:
-                return getSubCompanyName(value);
-            default:
-                throw new IllegalArgumentException("未找到对应的字段取值方式，取值方式：" + getWorkflowFieldDataWay);
-        }
-    }
-
-    private String getSelectorText(String value, int fieldId) {
-        if (StringUtils.isEmpty(value)) {
-            return "";
-        }
-        if (!value.contains(",")) {
-            return WorkflowUtil.getSelectItemShowName(fieldId, Integer.parseInt(value), recordSet);
-        }
-        List<String> names = new ArrayList<>();
-        for (String v : value.split(",")) {
-            names.add(WorkflowUtil.getSelectItemShowName(fieldId, Integer.parseInt(v), recordSet));
-        }
-        return StringUtils.join(names, ",");
-    }
-
     /**
      * 根据字段id获取流程字段值
      *
@@ -281,6 +218,69 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
             default:
                 throw new IllegalArgumentException("未定义系统字段获取方法，系统字段：" + systemParam);
         }
+    }
+
+    private String getFieldValueByFieldName(String fieldName, String workflowTableName) {
+        String sql = "select " + fieldName + " from " + workflowTableName +
+                " where requestid=?";
+        if (!recordSet.executeQuery(sql, requestId)) {
+            log.error("sql 查询错误，sql:" + sql);
+            return "";
+        }
+        if (!recordSet.next()) {
+            log.warn("无此请求id流程数据，请求id：" + this.requestId);
+            return "";
+        }
+        return recordSet.getString(fieldName);
+    }
+
+    private void setRequestIdAndInit(int requestId) {
+        if (this.requestId == null || this.requestId != requestId
+                || this.workflowTableName == null || this.workflowId == null) {
+            this.requestId = requestId;
+            this.workflowTableName = null;
+            this.workflowId = null;
+            init();
+        }
+    }
+
+    private void init() {
+        recordSet.executeQuery("SELECT workflowid from workflow_requestbase WHERE requestid=?", requestId);
+        if (!recordSet.next()) {
+            log.error("无法根据此请求id查询流程id，请求id：" + requestId);
+            return;
+        }
+        this.workflowId = recordSet.getInt("workflowid");
+        this.workflowTableName = WorkflowUtil.getWorkflowTableName(workflowId, recordSet);
+    }
+
+    private String getFieldValueByWay(String value, int fieldId, GetWorkflowFieldDataWay getWorkflowFieldDataWay) {
+        switch (getWorkflowFieldDataWay) {
+            case SELECTOR_TEXT:
+                return getSelectorText(value, fieldId);
+            case HRM_TEXT:
+                return getHrmText(value);
+            case DEPARTMENT_TEXT:
+                return getDepartmentText(value);
+            case SUB_COMPANY_TEXT:
+                return getSubCompanyName(value);
+            default:
+                throw new IllegalArgumentException("未找到对应的字段取值方式，取值方式：" + getWorkflowFieldDataWay);
+        }
+    }
+
+    private String getSelectorText(String value, int fieldId) {
+        if (StringUtils.isEmpty(value)) {
+            return "";
+        }
+        if (!value.contains(",")) {
+            return WorkflowUtil.getSelectItemShowName(fieldId, Integer.parseInt(value), recordSet);
+        }
+        List<String> names = new ArrayList<>();
+        for (String v : value.split(",")) {
+            names.add(WorkflowUtil.getSelectItemShowName(fieldId, Integer.parseInt(v), recordSet));
+        }
+        return StringUtils.join(names, ",");
     }
 
     @NotNull

@@ -25,12 +25,13 @@ public class WorkflowOperateUtil {
 
     /**
      * 提交流程
-     * @param requestId 请求id
+     *
+     * @param requestId  请求id
      * @param operatorId 操作者id
-     * @param remark 签字意见，如果不需要则传null或者空字符串
+     * @param remark     签字意见，如果不需要则传null或者空字符串
      * @return 是否提交成功
      */
-    public static boolean submit(int requestId,int operatorId,@Nullable String remark) {
+    public static boolean submit(int requestId, int operatorId, @Nullable String remark) {
         ReqOperateRequestEntity operateEntity = new ReqOperateRequestEntity();
         if (StrUtil.isNotEmpty(remark)) {
             operateEntity.setRemark(remark);
@@ -38,14 +39,15 @@ public class WorkflowOperateUtil {
         operateEntity.setRequestId(requestId);
         WorkflowRequestOperatePA operatePa = ServiceUtil.getService(WorkflowRequestOperatePAImpl.class);
         PAResponseEntity result = operatePa.submitRequest(new User(operatorId), operateEntity);
-        log.info("提交结果："+ JSON.toJSONString(result));
+        log.info("提交结果：" + JSON.toJSONString(result));
         return result.getCode() == PAResponseCode.SUCCESS;
     }
 
     /**
      * 流程干预，请参考
      * <a href="https://www.e-cology.com.cn/sp/ebdfpage/card/0/100002760000000773/100594140000015321">流程干预</a>
-     * @param user 操作者
+     *
+     * @param user          操作者
      * @param operateEntity 参数，必填：submitNodeId（目标节点）、Intervenorid（干预节点接收人，多个人以","号隔开）、requestId
      * @return 当 code 为 SUCCESS 时表示流程干预成功
      */

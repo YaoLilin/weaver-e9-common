@@ -17,14 +17,14 @@ import java.util.Optional;
  * @desc 获取契约锁文件签名信息
  * @date 2025/8/3
  **/
-public class SysFileSignatureInfoManager {
-    private static final Logger log = LoggerFactory.getLogger(SysFileSignatureInfoManager.class);
+public class QysFileSignatureInfoManager {
+    private static final Logger log = LoggerFactory.getLogger(QysFileSignatureInfoManager.class);
     private final String serverHost;
     private final String appToken;
     private final String appSecret;
     private final OkHttpClient httpClient;
 
-    public SysFileSignatureInfoManager(String serverHost, String appToken, String appSecret) {
+    public QysFileSignatureInfoManager(String serverHost, String appToken, String appSecret) {
         this.serverHost = serverHost;
         this.appToken = appToken;
         this.appSecret = appSecret;

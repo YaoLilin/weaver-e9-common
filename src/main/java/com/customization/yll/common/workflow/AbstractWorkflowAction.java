@@ -15,7 +15,8 @@ import java.lang.reflect.Field;
 
 /**
  * @author 姚礼林
- * @desc WorkflowAction 抽象类
+ * @desc WorkflowAction 抽象类，实现此抽象类可让流程 Action 开发更方便，它提供了更加明确的 Action 执行结果，以及可以方便的
+ * 获取到流程字段等功能
  * @date 2025/8/6
  **/
 public abstract class AbstractWorkflowAction implements Action {

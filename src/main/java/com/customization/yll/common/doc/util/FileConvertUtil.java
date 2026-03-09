@@ -16,7 +16,7 @@ import java.util.Optional;
  * @date 2025/7/28
  **/
 @UtilityClass
-public class FileConvertUtil{
+public class FileConvertUtil {
     private static final Logger log = LogUtil.getIntegrationLog(FileConvertUtil.class);
 
     /**
@@ -30,6 +30,13 @@ public class FileConvertUtil{
         return DocUtil.convertPdfByOfficedService(newFileName, imageFileId);
     }
 
+    /**
+     * 通过WPS集成将指定ID的文件转换为PDF并保存到指定路径。
+     *
+     * @param saveFilePath 文件保存的完整路径
+     * @param imageFileId  需要转换成PDF格式的文件ID
+     * @return 如果转换成功并保存，则返回true；否则返回false。
+     */
     public static boolean convertToPdfByWpsIntegrationSave(String saveFilePath, int imageFileId) {
         String fileName = saveFilePath.substring(saveFilePath.lastIndexOf(FileUtil.getSeparator()) + 1);
         Optional<Integer> newFileId = convertToPdfByWpsIntegration(fileName, imageFileId);
@@ -56,14 +63,15 @@ public class FileConvertUtil{
 
     /**
      * 获取文件格式转换器，使用WPS Api（文档中台）进行文档转换
-     * @param oaHost oa系统地址
-     * @param host wps文档中台服务器地址
+     *
+     * @param oaHost    oa系统地址
+     * @param host      wps文档中台服务器地址
      * @param secretKey wps文档中台secretKey
      * @param accessKey wps文档中台accessKey
      * @return 文件格式转换器
      */
     public static DocConvertorByWpsApi getConvertorWithWpsApi(String oaHost, String host,
-        String secretKey, String accessKey) {
+                                                              String secretKey, String accessKey) {
         return new DocConvertorByWpsApi(oaHost, host, secretKey, accessKey);
     }
 }

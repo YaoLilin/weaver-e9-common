@@ -28,4 +28,5 @@ build
 bin
 log
 out-dep
+**/test
 

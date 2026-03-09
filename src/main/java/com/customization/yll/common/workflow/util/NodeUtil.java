@@ -15,12 +15,27 @@ import java.util.Optional;
 @UtilityClass
 public class NodeUtil {
 
+    /**
+     * 根据节点id获取节点名称
+     *
+     * @param nodeId    节点id
+     * @param recordSet recordSet
+     * @return 节点名称，如果获取不到则返回空字符串
+     */
     public static String getNodeName(int nodeId, RecordSet recordSet) {
         recordSet.executeQuery("select nodename from workflow_nodebase where id=?", nodeId);
         recordSet.next();
         return recordSet.getString("nodename");
     }
 
+    /**
+     * 根据节点名称和工作流ID获取节点ID。
+     *
+     * @param nodeName   节点名称
+     * @param workflowId 工作流ID
+     * @param recordSet  用于执行查询的RecordSet对象
+     * @return 如果找到匹配的节点，则返回包含节点ID的Optional，否则返回空Optional
+     */
     public static Optional<Integer> getNodeId(int nodeName, int workflowId, RecordSet recordSet) {
         recordSet.executeQuery("SELECT n.id from workflow_nodebase n join workflow_flownode f " +
                 "on f.nodeid = n.id where f.WORKFLOWID=? and n.nodename=?", workflowId, nodeName);
@@ -32,12 +47,13 @@ public class NodeUtil {
 
     /**
      * 根据节点名称获取所有流程版本的节点id
-     * @param formId 表单id
-     * @param nodeName 节点名称
+     *
+     * @param formId    表单id
+     * @param nodeName  节点名称
      * @param recordSet recordSet
      * @return 所有流程版本的节点id
      */
-    public static List<Integer> getNodeListByNodeName(int formId,String nodeName,RecordSet recordSet) {
+    public static List<Integer> getNodeListByNodeName(int formId, String nodeName, RecordSet recordSet) {
         recordSet.executeQuery("SELECT n.id from workflow_nodebase n join workflow_flownode f " +
                 "on f.nodeid = n.id join workflow_base w on f.WORKFLOWID = w.id " +
                 "where w.formid=? and n.nodename=?", formId, nodeName);
