@@ -29,8 +29,6 @@
 
 **功能**：
 
-**功能**：
-
 - 完善的返回结果，包含是否成功和执行结果信息。
   在标准的 `Action` 接口的 `execute()` 方法中，返回结果类型是字符串，使用者不知道需要返回什么
   字符串，而在 `AbstractWorkflowAction` 的 `doExecute()` 方法的返回结果是一个明确的 `ActionResult` 对象，
