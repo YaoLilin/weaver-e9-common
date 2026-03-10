@@ -18,6 +18,10 @@
 目录  
 方法二：源码编译，需要有泛微 E9 开发环境，下载源码并放入你的开发项目，编译后将 class 文件放入你的开发包并部署到服务器中
 
+## E10 二开公共类库
+
+我在 E10 也创建了公共类库，感兴趣可以看看，https://github.com/YaoLilin/weaver-e10-second-dev-common
+
 ## 主要功能 🎉
 
 ### 流程
@@ -159,7 +163,7 @@ public class TestAction3 extends AbstractWorkflowAction {
 
 ```java
 WorkflowFieldMapper fieldMapper = new WorkflowFieldMapper();
-
+JSONObject body = new JSONObject();
 fieldMapper.
 
 addMainFieldMapConfig("applyNo",new MapInfo("applyNo", true));
@@ -178,7 +182,7 @@ addMainFieldMapConfig("sqrq",new MapInfo("applicationDate", true));
         fieldMapper.
 
 addMainFieldMapConfig("tzlxxlk",new MapInfo("investmentType")
-.
+                .
 
 setConvertFunction(v ->
 
@@ -186,16 +190,8 @@ getSelectorShowName(v, "tzlxxlk",tableName, recordSet)));
         fieldMapper.
 
 addMainFieldMapConfig("xmmcn",new MapInfo("projectName", true));
-        fieldMapper.
 
-addMainFieldMapConfig(isProject() ?"tzzje":"ztzje",
-        new
-
-MapInfo("totalAmount",true)
-.
-
-setConvertFunction(this::amountFormat));
-// mapMainField() 方法将会生成 Map 类型的接口参数
+// mapMainField() 方法会生成 Map 类型的接口参数
         body.
 
 putAll(fieldMapper.mapMainField(requestInfo.getMainTableInfo().
