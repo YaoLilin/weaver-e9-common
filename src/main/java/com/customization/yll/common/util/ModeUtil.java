@@ -1,9 +1,14 @@
 package com.customization.yll.common.util;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.util.StrUtil;
 import com.customization.yll.common.bean.SearchPageFieldInfo;
 import com.customization.yll.common.exception.SqlExecuteException;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.experimental.UtilityClass;
+import org.jetbrains.annotations.NotNull;
 import weaver.conn.RecordSet;
 import weaver.conn.RecordSetExecutionInterface;
 import weaver.formmode.setup.ModeRightInfo;
@@ -211,6 +216,12 @@ public class ModeUtil {
      */
     public static boolean batchInsertToMode(List<Map<String, Object>> data, String tableName, int modeId,
                                             boolean isReconstructionJC, RecordSet recordSet) {
+        if (CollUtil.isEmpty(data)) {
+            logger.info("无插入数据");
+            return true;
+        }
+        verifyBatchInsertParams(tableName, modeId, recordSet);
+
         try {
             return batchInsertToModeByRsInterface(data, tableName, modeId, isReconstructionJC, recordSet);
         } catch (Exception e) {
@@ -232,37 +243,62 @@ public class ModeUtil {
     public static boolean batchInsertToModeByRsInterface(List<Map<String, Object>> data, String tableName, int modeId,
                                                          boolean isReconstructionJC,
                                                          RecordSetExecutionInterface recordSet) throws Exception {
-        List<String> uuids = new ArrayList<>();
-        List<Map<String, Object>> insertData = new ArrayList<>(data);
-        insertData.forEach(i -> {
-            String uuid = UUID.randomUUID().toString();
-            uuids.add(uuid);
-            addStanderFieldValue(i, modeId, uuid);
-        });
-        if (!DbUtil.batchInsert(insertData, tableName, recordSet)) {
+        if (CollUtil.isEmpty(data)) {
+            logger.info("无插入数据");
+            return true;
+        }
+        verifyBatchInsertParams(tableName, modeId, recordSet);
+
+        List<String> uuids = getUuids(data.size());
+
+        if (!batchInsert(data, uuids, tableName, modeId, recordSet)) {
             return false;
         }
 
         if (isReconstructionJC) {
-            List<Integer> ids = new ArrayList<>();
-            String sql = "select id from " + tableName + " where modeuuid=?";
-            for (String uuid : uuids) {
-                if (!recordSet.executeSql(sql, true, "", false, uuid)) {
-                    logger.error("根据uuid查询数据id失败");
-                    continue;
-                }
-                if (!recordSet.next()) {
-                    logger.warn("无法查询到数据id，uuid:" + uuid);
-                    continue;
-                }
-                ids.add(recordSet.getInt("id"));
-            }
-            if (ids.isEmpty()) {
-                logger.error("ids 集合为空");
-            }
-            ids.forEach(id -> reconstructionJC(id, modeId, 1));
+            List<Integer> ids = getIdsByUuid(tableName, recordSet, uuids);
+            batchReconstructionJC(modeId, ids);
         }
         return true;
+    }
+
+    /**
+     * 执行批量插入操作并获取插入数据的ID
+     *
+     * @param data               待插入的数据列表，每个元素是一个Map，表示一行数据
+     * @param tableName          目标表名
+     * @param modeId             模块id
+     * @param isReconstructionJC 是否执行权限重构
+     * @param recordSet          RecordSetExecutionInterface 对象
+     * @return 返回一个BatchInsertResult对象，包含插入是否成功以及成功的插入记录ID列表。如果插入失败或获取ID过程中发生异常，则返回空的ID列表。
+     */
+    public static BatchInsertResult batchInsertAndGetIds(List<Map<String, Object>> data, String tableName, int modeId,
+                                                         boolean isReconstructionJC,
+                                                         RecordSetExecutionInterface recordSet) {
+        if (CollUtil.isEmpty(data)) {
+            logger.info("无插入数据");
+            return new BatchInsertResult(true, Collections.emptyList());
+        }
+        verifyBatchInsertParams(tableName, modeId, recordSet);
+
+        List<String> uuids = getUuids(data.size());
+
+        if (!batchInsert(data, uuids, tableName, modeId, recordSet)) {
+            return new BatchInsertResult(false, null);
+        }
+
+        List<Integer> ids;
+        try {
+            ids = getIdsByUuid(tableName, recordSet, uuids);
+        } catch (Exception e) {
+            logger.error("根据uuid查询id发生异常", e);
+            return new BatchInsertResult(true, Collections.emptyList());
+        }
+
+        if (isReconstructionJC) {
+            batchReconstructionJC(modeId, ids);
+        }
+        return new BatchInsertResult(true, ids);
     }
 
     /**
@@ -278,6 +314,86 @@ public class ModeUtil {
         Map<String, Object> condition = new HashMap<>(1);
         condition.put("id", dataId);
         return DbUtil.update(data, condition, tableName, recordSet);
+    }
+
+    private static void verifyBatchInsertParams(String tableName, int modeId, RecordSetExecutionInterface recordSet) {
+        if (StrUtil.isBlank(tableName)) {
+            throw new IllegalArgumentException("表名为空，请传入正确表名");
+        }
+        if (modeId < 1) {
+            throw new IllegalArgumentException("modeId 不正确，必需大于0，modeId:" + modeId);
+        }
+        Objects.requireNonNull(recordSet, "RecordSet 对象不能为空");
+    }
+
+    /**
+     * 批量权限重构
+     */
+    private static void batchReconstructionJC(int modeId, List<Integer> ids) {
+        try {
+            if (CollUtil.isNotEmpty(ids)) {
+                for (Integer id : ids) {
+                    reconstructionJC(id, modeId, 1);
+                }
+            } else {
+                logger.error("ids 集合为空");
+            }
+        } catch (Exception e) {
+            logger.error("执行权限重构发生异常", e);
+        }
+    }
+
+    @NotNull
+    private static List<String> getUuids(int num) {
+        List<String> uuids = new ArrayList<>();
+        for (int i = 0; i < num; i++) {
+            uuids.add(UUID.randomUUID().toString());
+        }
+        return uuids;
+    }
+
+    private static boolean batchInsert(List<Map<String, Object>> data, List<String> uuidList, String tableName, int modeId,
+                                       RecordSetExecutionInterface recordSet) {
+        if (data.size() != uuidList.size()) {
+            logger.error("插入失败，待插入数据数量不等于uuid数量");
+            return false;
+        }
+        List<Map<String, Object>> insertData = new ArrayList<>(data);
+        for (int i = 0; i < insertData.size(); i++) {
+            Map<String, Object> item = insertData.get(i);
+            String uuid = uuidList.get(i);
+
+            addStanderFieldValue(item, modeId, uuid);
+        }
+
+        try {
+            return DbUtil.batchInsert(insertData, tableName, recordSet);
+        } catch (Exception e) {
+            logger.error("批量插入发生异常", e);
+            return false;
+        }
+    }
+
+    @NotNull
+    private static List<Integer> getIdsByUuid(String tableName, RecordSetExecutionInterface recordSet,
+                                              List<String> uuids) throws Exception {
+        List<Integer> ids = new ArrayList<>();
+        String sql = "select id from " + tableName + " where modeuuid=?";
+        for (String uuid : uuids) {
+            if (StrUtil.isBlank(uuid)) {
+                continue;
+            }
+            if (!recordSet.executeSql(sql, true, "", false, uuid)) {
+                logger.error("根据uuid查询数据id失败,uuid:" + uuid + ",表名：" + tableName);
+                break;
+            }
+            if (!recordSet.next()) {
+                logger.warn("无法查询到数据id，uuid:" + uuid);
+                continue;
+            }
+            ids.add(recordSet.getInt("id"));
+        }
+        return ids;
     }
 
     private static void addStanderFieldValue(Map<String, Object> fieldData, int modeId, String uuid) {
@@ -305,6 +421,13 @@ public class ModeUtil {
         ModeRightInfo modeRightInfo = new ModeRightInfo();
         modeRightInfo.setNewRight(true);
         modeRightInfo.editModeDataShare(userId, modelId, id);
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class BatchInsertResult {
+        private boolean success;
+        private List<Integer> ids;
     }
 
 }
