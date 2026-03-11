@@ -12,6 +12,10 @@
 
 任何人都可以提交代码，代码需符合规范，例如阿里巴巴编码规约，谷歌规范。对于现有的代码不要修改方法的签名，防止破坏正在使用的项目。
 
+## 提交问题
+
+如使用中遇到问题，请提交 issues
+
 ## 使用方法
 
 方法一：直接使用 jar 包，下载 `weaver-liuzhou-seconddev-common.jar` ，将此 jar 包部署到服务器的 `ecology/WEB-INF/lib`
@@ -162,41 +166,20 @@ public class TestAction3 extends AbstractWorkflowAction {
 主表字段值映射到接口参数：
 
 ```java
-WorkflowFieldMapper fieldMapper = new WorkflowFieldMapper();
-JSONObject body = new JSONObject();
-fieldMapper.
-
-addMainFieldMapConfig("applyNo",new MapInfo("applyNo", true));
-        fieldMapper.
-
-addMainFieldMapConfig(isProject() ?"sqygbh":"sqrbh",
-        new
-
-MapInfo("applicantName",true));
-        fieldMapper.
-
-addMainFieldMapConfig("sqrdh",new MapInfo("applicantPhone", true));
-        fieldMapper.
-
-addMainFieldMapConfig("sqrq",new MapInfo("applicationDate", true));
-        fieldMapper.
-
-addMainFieldMapConfig("tzlxxlk",new MapInfo("investmentType")
-                .
-
-setConvertFunction(v ->
-
-getSelectorShowName(v, "tzlxxlk",tableName, recordSet)));
-        fieldMapper.
-
-addMainFieldMapConfig("xmmcn",new MapInfo("projectName", true));
+public void paramMapDemo() {
+  WorkflowFieldMapper fieldMapper = new WorkflowFieldMapper();
+  JSONObject body = new JSONObject();
+  fieldMapper.addMainFieldMapConfig("applyNo", new MapInfo("applyNo", true));
+  fieldMapper.addMainFieldMapConfig(isProject() ? "sqygbh" : "sqrbh", new MapInfo("applicantName", true));
+  fieldMapper.addMainFieldMapConfig("sqrdh", new MapInfo("applicantPhone", true));
+  fieldMapper.addMainFieldMapConfig("sqrq", new MapInfo("applicationDate", true));
+  fieldMapper.addMainFieldMapConfig("tzlxxlk", new MapInfo("investmentType")
+          .setConvertFunction(v -> getSelectorShowName(v, "tzlxxlk", tableName, recordSet)));
+  fieldMapper.addMainFieldMapConfig("xmmcn", new MapInfo("projectName", true));
 
 // mapMainField() 方法会生成 Map 类型的接口参数
-        body.
-
-putAll(fieldMapper.mapMainField(requestInfo.getMainTableInfo().
-
-getProperty()));
+  body.putAll(fieldMapper.mapMainField(requestInfo.getMainTableInfo().getProperty()));
+}
 ```
 
 ### 建模
@@ -228,15 +211,61 @@ getProperty()));
 #### ModeConfigUtil - 建模配置属性工具类
 
 **路径**：`com.customization.yll.common.mode.util.ModeConfigUtil`    
-**说明**：用于获取建模统一配置中心的配置属性值，支持缓存和必填校验。该功能可实现在建模中创建配置属性，  
-替换传统中使用配置文件的属性配置方法，需要在建模中创建模块与表结构才可以使用。
+**说明**：可在建模中获取配置属性，替换传统中使用 `properties` 配置文件的属性配置方法，支持缓存和必填校验。
+使用建模的好处是不用到服务器修改配置属性，在集群中会更麻烦，在建模中配置即可。需要在建模中创建模块与表结构才可以使用。
 
 **功能**：
-
 - 获取配置属性值：根据配置id和属性名获取配置中心的值
 - 必填校验：支持对配置属性进行必填校验，当必需的属性不存在时抛出异常
 - 缓存支持：支持将配置属性值缓存到内存中，提高查询性能
 - 缓存过期：支持自定义缓存过期时间，默认3分钟过期
+
+**使用方法**：
+
+1. 必需创建对应的建模与表结构
+2. 需在模块的页面扩展 `保存编辑` 中添加 `Action` 动作，用于在编辑保存时清除当前配置的缓存，`Action` 路径：
+   `com.customization.yll.common.mode.CleanModeConfigCacheAction` , 该 `Action` 已在本项目中
+3. 你可以像在 `properties` 文件一样在建模中创建配置，只需要在建模中新建数据，然后配置明细，你可以新建多条建模数据，
+   不同配置数据使用 `CONFIG_ID` 区分
+
+**表结构约定**：
+
+- 表名：uf_config_center
+- 主表字段：
+  - config_id 配置id，文本
+  - name 配置名称，文本
+  - description 配置描述，文本
+- 明细表1字段：
+  - name 属性名，文本
+  - value 属性值，文本
+  - description 说明 ，文本
+
+**代码示例**：  
+CONFIG_ID 可为 UUID ，需在系统中唯一，区分其它配置
+
+```java
+// wps 服务配置
+public class WpsServiceProperties {
+  public static final String CONFIG_ID = "d9a88412-3de0-46b7-9ea6-8fa3d06afe56";
+
+  public static String getOaHost() {
+    return ModeConfigUtil.getPropValue(CONFIG_ID, "oaHost", true, true);
+  }
+
+  public static String getHost() {
+    return ModeConfigUtil.getPropValue(CONFIG_ID, "host", true, true);
+  }
+
+  public static String getSecretKey() {
+    return ModeConfigUtil.getPropValue(CONFIG_ID, "secretKey", true, true);
+  }
+
+  public static String getAccessKey() {
+    return ModeConfigUtil.getPropValue(CONFIG_ID, "accessKey", true, true);
+  }
+}
+
+```
 
 ### 文档
 
@@ -441,6 +470,33 @@ getProperty()));
 - 属性值获取：获取配置文件中的属性值，支持必填校验
 - 缓存机制：支持属性值的内存缓存，提高读取性能
 - 配置转换：将配置字符串转换为Map对象
+
+**代码示例**：
+
+```java
+/**
+ * @author 姚礼林
+ * @desc Kafka 配置
+ * @date 2025/9/9
+ **/
+@UtilityClass
+public class KafkaConfig {
+  public static final String FILE_NAME = PropFileConstants.FILE_NAME;
+
+  public static String getServerAddress() {
+    return PropertiesUtil.getPropValue(FILE_NAME, "serverIp", true, true);
+  }
+
+  public static String getTopic() {
+    return PropertiesUtil.getPropValue(FILE_NAME, PropFileConstants.TOPIC, true, true);
+  }
+
+  public static String getKey() {
+    return PropertiesUtil.getPropValue(FILE_NAME, PropFileConstants.KEY, true, true);
+  }
+}
+
+```
 
 #### DbUtil - 数据库工具类
 
