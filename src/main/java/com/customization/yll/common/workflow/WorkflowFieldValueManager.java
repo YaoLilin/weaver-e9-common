@@ -25,7 +25,6 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
     private Integer requestId;
     private String workflowTableName;
     private Integer workflowId;
-    private final RecordSet recordSet = new RecordSet();
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     /**
@@ -80,13 +79,14 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
      */
     @Override
     public String getFieldValueByFieldId(int requestId, int fieldId, GetWorkflowFieldDataWay getWorkflowFieldDataWay) {
-        setRequestIdAndInit(requestId);
+        RecordSet recordSet = new RecordSet();
+        setRequestIdAndInit(requestId, recordSet);
         String fieldName = FormUtil.getFieldName(fieldId, workflowId, recordSet);
-        String value = getFieldValueByFieldName(fieldName, this.workflowTableName);
+        String value = getFieldValueByFieldName(fieldName, this.workflowTableName, recordSet);
         if (StringUtils.isEmpty(value) || getWorkflowFieldDataWay == null) {
             return value;
         }
-        return getFieldValueByWay(value, fieldId, getWorkflowFieldDataWay);
+        return getFieldValueByWay(value, fieldId, getWorkflowFieldDataWay, recordSet);
     }
 
     /**
@@ -113,8 +113,9 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
         if (StrUtil.isBlank(fieldName)) {
             return "";
         }
-        setRequestIdAndInit(requestId);
-        return getFieldValueByFieldName(fieldName, this.workflowTableName);
+        RecordSet recordSet = new RecordSet();
+        setRequestIdAndInit(requestId, recordSet);
+        return getFieldValueByFieldName(fieldName, this.workflowTableName, recordSet);
     }
 
     /**
@@ -129,7 +130,8 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
         if (CollUtil.isEmpty(fieldNames)) {
             return Collections.emptyMap();
         }
-        setRequestIdAndInit(requestId);
+        RecordSet recordSet = new RecordSet();
+        setRequestIdAndInit(requestId, recordSet);
         String sql = SqlUtil.buildQuerySql(fieldNames, workflowTableName);
         sql += " where requestid=?";
         recordSet.executeQuery(sql, requestId);
@@ -166,22 +168,23 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
         if (CollUtil.isEmpty(fieldNames)) {
             throw new IllegalArgumentException("明细表字段名集合不能为空");
         }
-        String workflowTableName = WorkflowUtil.getWorkflowTableNameByRequestId(requestId, recordSet);
+        String workflowTableName = WorkflowUtil.getWorkflowTableNameByRequestId(requestId, new RecordSet());
         if (StrUtil.isEmpty(workflowTableName)) {
             throw new IllegalArgumentException("无法获取流程表名，请检查请求id是否正确");
         }
         String detailTableName = workflowTableName + "_dt" + detailNum;
         String querySql = SqlUtil.buildQuerySql(fieldNames, detailTableName, "t");
         querySql += " JOIN " + workflowTableName + " z ON z.id = t.mainid AND z.requestid=?";
-        if (!recordSet.executeQuery(querySql, requestId)) {
+        RecordSet detailRecordSet = new RecordSet();
+        if (!detailRecordSet.executeQuery(querySql, requestId)) {
             throw new SqlExecuteException("查询流程明细表失败，sql:" + querySql);
         }
 
         List<Map<String, String>> detailData = new ArrayList<>();
-        while (recordSet.next()) {
+        while (detailRecordSet.next()) {
             Map<String, String> row = new HashMap<>(20);
             for (String fieldName : fieldNames) {
-                row.put(fieldName, recordSet.getString(fieldName));
+                row.put(fieldName, detailRecordSet.getString(fieldName));
             }
             detailData.add(row);
         }
@@ -220,7 +223,7 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
         }
     }
 
-    private String getFieldValueByFieldName(String fieldName, String workflowTableName) {
+    private String getFieldValueByFieldName(String fieldName, String workflowTableName, RecordSet recordSet) {
         String sql = "select " + fieldName + " from " + workflowTableName +
                 " where requestid=?";
         if (!recordSet.executeQuery(sql, requestId)) {
@@ -234,42 +237,43 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
         return recordSet.getString(fieldName);
     }
 
-    private void setRequestIdAndInit(int requestId) {
+    private void setRequestIdAndInit(int requestId, RecordSet recordSet) {
         if (this.requestId == null || this.requestId != requestId
                 || this.workflowTableName == null || this.workflowId == null) {
             this.requestId = requestId;
             this.workflowTableName = null;
             this.workflowId = null;
-            init();
+            init(recordSet);
         }
     }
 
-    private void init() {
+    private void init(RecordSet recordSet) {
         recordSet.executeQuery("SELECT workflowid from workflow_requestbase WHERE requestid=?", requestId);
         if (!recordSet.next()) {
             log.error("无法根据此请求id查询流程id，请求id：" + requestId);
             return;
         }
         this.workflowId = recordSet.getInt("workflowid");
-        this.workflowTableName = WorkflowUtil.getWorkflowTableName(workflowId, recordSet);
+        this.workflowTableName = WorkflowUtil.getWorkflowTableName(workflowId, new RecordSet());
     }
 
-    private String getFieldValueByWay(String value, int fieldId, GetWorkflowFieldDataWay getWorkflowFieldDataWay) {
+    private String getFieldValueByWay(String value, int fieldId, GetWorkflowFieldDataWay getWorkflowFieldDataWay,
+                                      RecordSet recordSet) {
         switch (getWorkflowFieldDataWay) {
             case SELECTOR_TEXT:
-                return getSelectorText(value, fieldId);
+                return getSelectorText(value, fieldId, recordSet);
             case HRM_TEXT:
-                return getHrmText(value);
+                return getHrmText(value, recordSet);
             case DEPARTMENT_TEXT:
                 return getDepartmentText(value);
             case SUB_COMPANY_TEXT:
-                return getSubCompanyName(value);
+                return getSubCompanyName(value, recordSet);
             default:
                 throw new IllegalArgumentException("未找到对应的字段取值方式，取值方式：" + getWorkflowFieldDataWay);
         }
     }
 
-    private String getSelectorText(String value, int fieldId) {
+    private String getSelectorText(String value, int fieldId, RecordSet recordSet) {
         if (StringUtils.isEmpty(value)) {
             return "";
         }
@@ -285,12 +289,14 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
 
     @NotNull
     private String getArchiveDateTime() {
+        RecordSet recordSet = new RecordSet();
         recordSet.executeQuery("select lastoperatedate,lastoperatetime from workflow_requestbase where requestid = ?", requestId);
         recordSet.next();
         return recordSet.getString("lastoperatedate") + " " + recordSet.getString("lastoperatetime");
     }
 
     private String getArchiveDate() {
+        RecordSet recordSet = new RecordSet();
         recordSet.executeQuery("select lastoperatedate from workflow_requestbase where requestid = ?", requestId);
         recordSet.next();
         return recordSet.getString("lastoperatedate");
@@ -298,24 +304,28 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
 
     @NotNull
     private String getCreateDateTime() {
+        RecordSet recordSet = new RecordSet();
         recordSet.executeQuery("select createdate,createtime from workflow_requestbase where requestid = ?", requestId);
         recordSet.next();
         return recordSet.getString("createdate") + " " + recordSet.getString("createtime");
     }
 
     private String getCreateDate() {
+        RecordSet recordSet = new RecordSet();
         recordSet.executeQuery("select createdate from workflow_requestbase where requestid = ?", requestId);
         recordSet.next();
         return recordSet.getString("createdate");
     }
 
     private String getTitle() {
+        RecordSet recordSet = new RecordSet();
         recordSet.executeQuery("select requestname from workflow_requestbase where requestid = ?", requestId);
         recordSet.next();
         return recordSet.getString("requestname");
     }
 
     private int getCreator() {
+        RecordSet recordSet = new RecordSet();
         recordSet.executeQuery("select creater from workflow_requestbase where requestid = ?", requestId);
         recordSet.next();
         return recordSet.getInt("creater");
@@ -323,6 +333,7 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
 
     private String getCreatorDepartment() {
         int creator = getCreator();
+        RecordSet recordSet = new RecordSet();
         recordSet.executeQuery("SELECT d.departmentname from hrmdepartment d join hrmresource h " +
                 "on h.departmentid = d.id where h.id = ?", creator);
         recordSet.next();
@@ -332,6 +343,7 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
     private String getCreatorName() {
         int creator = getCreator();
         log.info("获取到创建人id：" + creator);
+        RecordSet recordSet = new RecordSet();
         String lastName = HrmInfoUtil.getLastName(creator, recordSet);
         log.info("创建人姓名：" + lastName);
         return MultiLanguageUtil.analyzeMultiLanguageText(lastName, LanguageType.CN, recordSet);
@@ -339,6 +351,7 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
 
     @NotNull
     private String getUrgentLevel() {
+        RecordSet recordSet = new RecordSet();
         recordSet.executeQuery("select requestlevel from workflow_requestbase where requestid = ?", requestId);
         recordSet.next();
         int requestLevel = recordSet.getInt("requestlevel");
@@ -353,7 +366,7 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
         }
     }
 
-    private String getHrmText(String value) {
+    private String getHrmText(String value, RecordSet recordSet) {
         if (StringUtils.isEmpty(value)) {
             return "";
         }
@@ -381,7 +394,7 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
         return StringUtils.join(names, ",");
     }
 
-    private String getSubCompanyName(String value) {
+    private String getSubCompanyName(String value, RecordSet recordSet) {
         if (StrUtil.isEmpty(value)) {
             return "";
         }
@@ -397,6 +410,7 @@ public class WorkflowFieldValueManager implements WorkflowFieldValueFetchInterfa
     }
 
     private String getDepartmentName(String value) {
+        RecordSet recordSet = new RecordSet();
         recordSet.executeQuery("select departmentname from hrmdepartment where id=?", value);
         recordSet.next();
         return recordSet.getString("departmentname");

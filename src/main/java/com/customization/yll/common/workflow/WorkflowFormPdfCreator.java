@@ -42,9 +42,15 @@ public class WorkflowFormPdfCreator {
      * @return 是否生成成功
      */
     public boolean createFormPdf(String fileSavePath, int nodeId, int requestId) {
-        int workflowId = WorkflowUtil.getWorkflowId(requestId, new RecordSet());
-        Optional<Integer> fileIdOp = createFormPdf(workflowId, nodeId, requestId);
-        if (!fileIdOp.isPresent()) {
+        Optional<Integer> fileIdOp;
+        try {
+            int workflowId = WorkflowUtil.getWorkflowId(requestId, new RecordSet());
+            fileIdOp = createFormPdf(workflowId, nodeId, requestId);
+            if (!fileIdOp.isPresent()) {
+                return false;
+            }
+        } catch (Exception e) {
+            log.error("生成表单pdf发生异常", e);
             return false;
         }
         try {
@@ -65,13 +71,18 @@ public class WorkflowFormPdfCreator {
      * @return 表单pdf文件的文件id，该文件id为 imagefile 表的id
      */
     public Optional<Integer> createFormPdf(int workflowId, int nodeId, int requestId) {
-        LinkedHashMap<String, String> fileIdMap = workflowSaveAsDoc(workflowId, nodeId, requestId);
-        String pdfFileId = fileIdMap.get("offline_pdf");
-        if (StrUtil.isEmpty(pdfFileId)) {
-            log.error("生成pdf失败，没有找到 pdf fileId");
+        try {
+            LinkedHashMap<String, String> fileIdMap = workflowSaveAsDoc(workflowId, nodeId, requestId);
+            String pdfFileId = fileIdMap.get("offline_pdf");
+            if (StrUtil.isEmpty(pdfFileId)) {
+                log.error("生成pdf失败，没有找到 pdf fileId");
+                return Optional.empty();
+            }
+            return Optional.of(Integer.parseInt(pdfFileId));
+        } catch (Exception e) {
+            log.error("生成表单pdf发生异常", e);
             return Optional.empty();
         }
-        return Optional.of(Integer.parseInt(pdfFileId));
     }
 
     /**
