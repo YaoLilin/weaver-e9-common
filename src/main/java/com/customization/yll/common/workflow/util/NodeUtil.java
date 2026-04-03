@@ -36,7 +36,7 @@ public class NodeUtil {
      * @param recordSet  用于执行查询的RecordSet对象
      * @return 如果找到匹配的节点，则返回包含节点ID的Optional，否则返回空Optional
      */
-    public static Optional<Integer> getNodeId(int nodeName, int workflowId, RecordSet recordSet) {
+    public static Optional<Integer> getNodeId(String nodeName, int workflowId, RecordSet recordSet) {
         recordSet.executeQuery("SELECT n.id from workflow_nodebase n join workflow_flownode f " +
                 "on f.nodeid = n.id where f.WORKFLOWID=? and n.nodename=?", workflowId, nodeName);
         if (!recordSet.next()) {
