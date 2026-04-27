@@ -4,13 +4,12 @@ package com.customization.yll.common.util;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
-import com.alibaba.fastjson.parser.Feature;
 import com.customization.yll.common.IntegrationLog;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonParseException;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.Nullable;
-import weaver.general.BaseBean;
 import weaver.general.Util;
 
 import javax.servlet.ServletInputStream;
@@ -18,6 +17,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,32 +35,43 @@ public class ParamUtil {
         return com.engine.common.util.ParamUtil.request2Map(request);
     }
 
-    public static Map<String, Object> requestJson2Map(HttpServletRequest var0) {
-        Object var1 = new HashMap();
+    public static Map<String, Object> requestJson2Map(HttpServletRequest request) {
+        Map<String, Object> resultMap = new HashMap<>();
 
         try {
-            ServletInputStream var2 = var0.getInputStream();
-            ByteArrayOutputStream var3 = new ByteArrayOutputStream();
-            byte[] var4 = new byte[1024];
-            boolean var5 = false;
+            ServletInputStream inputStream = request.getInputStream();
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            byte[] buffer = new byte[1024];
 
-            int var6;
-            while ((var6 = var2.read(var4)) != -1) {
-                var3.write(var4, 0, var6);
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
             }
 
-            var3.close();
-            var2.close();
-            String var7 = new String(var3.toByteArray(), "UTF-8");
-            if (Util.null2String(var7).length() > 0) {
-                var1 = (Map) JSONObject.parseObject(var7, new TypeReference<Map<String, Object>>() {
-                }, new Feature[0]);
+            outputStream.close();
+            inputStream.close();
+            String jsonString = new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
+            if (!Util.null2String(jsonString).isEmpty()) {
+                resultMap = JSONObject.parseObject(jsonString, new TypeReference<Map<String, Object>>() {
+                });
             }
-        } catch (Exception var8) {
-            (new BaseBean()).writeLog(var8);
+        } catch (Exception e) {
+            LOG.error("从 HttpServletRequest 中获取 JSON 参数发生异常", e);
+            throw new JsonParseException("从 HttpServletRequest 中获取 JSON 参数发生异常: " + e.getMessage(), e);
         }
 
-        return (Map) var1;
+        return resultMap;
+    }
+
+    /**
+     * 从 HttpServletRequest 中获取 JSON 参数
+     *
+     * @param request HttpServletRequest 对象
+     * @return JSON 对象
+     */
+    public static JSONObject request2JsonObject(HttpServletRequest request) {
+        Map<String, Object> map = requestJson2Map(request);
+        return new JSONObject(map);
     }
 
     /**
