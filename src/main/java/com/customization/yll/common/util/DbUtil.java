@@ -71,7 +71,7 @@ public class DbUtil {
             return false;
         }
         List<Object> values = new ArrayList<>(data.values());
-        String sql = buildUpdateSql(data, conditions, tableName, values);
+        String sql = SqlUtil.buildUpdateSql(data, conditions, tableName, values);
         logger.info("sql:" + sql);
         return recordSet.executeUpdate(sql, values);
     }
@@ -107,7 +107,7 @@ public class DbUtil {
             List<Object> valuesItem = new ArrayList<>(updateData.values());
             Map<String, Object> condition = conditionList.get(i);
             if (sql == null) {
-                sql = buildUpdateSql(updateData, condition, tableName, valuesItem);
+                sql = SqlUtil.buildUpdateSql(updateData, condition, tableName, valuesItem);
             }else {
                 // 插入条件的值到占位符值列表中
                 valuesItem.addAll(condition.values());
@@ -168,12 +168,5 @@ public class DbUtil {
         return results != null && results.length > 0;
     }
 
-    @NotNull
-    private static String buildUpdateSql(Map<String, Object> data, Map<String, Object> conditions,
-                                         String tableName, List<Object> values) {
-        String sql = SqlUtil.buildUpdateSql(tableName, new ArrayList<>(data.keySet()));
-        String whereSql = SqlUtil.buildEqualsWhere(conditions, values);
-        sql += whereSql;
-        return sql;
-    }
+
 }

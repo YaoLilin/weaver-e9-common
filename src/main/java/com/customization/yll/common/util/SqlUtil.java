@@ -22,8 +22,9 @@ public class SqlUtil {
 
     /**
      * 生成查询sql
+     *
      * @param fieldNames 查询字段名集合
-     * @param tableName 表名
+     * @param tableName  表名
      * @return 查询sql
      */
     @NotNull
@@ -33,8 +34,9 @@ public class SqlUtil {
 
     /**
      * 生成查询sql
+     *
      * @param fieldNames 查询字段名集合
-     * @param tableName 表名
+     * @param tableName  表名
      * @param tableAlias 表别名
      * @return 查询sql
      */
@@ -47,7 +49,7 @@ public class SqlUtil {
         fieldNames.forEach(i -> {
             if (StrUtil.isNotBlank(tableAlias)) {
                 sql.append(tableAlias).append(".").append(i).append(",");
-            }else {
+            } else {
                 sql.append(i).append(",");
             }
         });
@@ -73,7 +75,8 @@ public class SqlUtil {
     }
 
     /**
-     * 生成sql更新语句，不包括where部分，例如 update table_name1 set name=?,age=?，语句里使用了占位符，执行时请使用参数进行替换
+     * 生成sql更新语句，不包括where部分，例如 update table_name1 set
+     * name=?,age=?，语句里使用了占位符，执行时请使用参数进行替换
      *
      * @param tableName  更新表名
      * @param fieldNames 字段名
@@ -81,6 +84,25 @@ public class SqlUtil {
      */
     public static String buildUpdateSql(String tableName, List<String> fieldNames) {
         return "update " + tableName + " set " + buildUpdateSql(fieldNames);
+    }
+
+    /**
+     * 生成sql更新语句，包括where部分，例如 update table_name1 set name=?,age=? where id=?，
+     * 语句里使用了占位符，执行时请使用参数进行替换
+     *
+     * @param data       更新数据，字段名与更新的值映射，也就是sql的set部分
+     * @param conditions 条件，不能为空，都为相等条件，如 name=? and age=?
+     * @param tableName  表名
+     * @param values     sql 占位符对应的值，当生成条件语句时会将条件中的值插入到此列表中
+     * @return 带where关键字的SQL部分
+     */
+    @NotNull
+    public static String buildUpdateSql(Map<String, Object> data, Map<String, Object> conditions,
+                                        String tableName, List<Object> values) {
+        String sql = SqlUtil.buildUpdateSql(tableName, new ArrayList<>(data.keySet()));
+        String whereSql = SqlUtil.buildEqualsWhere(conditions, values);
+        sql += whereSql;
+        return sql;
     }
 
     /**
@@ -156,11 +178,11 @@ public class SqlUtil {
     /**
      * 构建分页 SQL
      *
-     * @param dbType   数据库类型
-     * @param baseSql  基础查询 SQL（不包含 order by / limit）
-     * @param orderBy  排序 SQL（可传入 "order by xxx" 或 "xxx"）
-     * @param offset   偏移量
-     * @param limit    每页数量
+     * @param dbType  数据库类型
+     * @param baseSql 基础查询 SQL（不包含 order by / limit）
+     * @param orderBy 排序 SQL（可传入 "order by xxx" 或 "xxx"）
+     * @param offset  偏移量
+     * @param limit   每页数量
      * @return 分页 SQL 与参数
      */
     public static SqlPageResult buildPageSql(String dbType, String baseSql, String orderBy, int offset, int limit) {
@@ -178,13 +200,13 @@ public class SqlUtil {
             params.add(offset);
         } else if ("oracle".equals(normalizedDbType)) {
             sql = "select * from (select t.*, rownum rn from (" + baseSql + orderBySql
-                + ") t where rownum <= ?) where rn >= ?";
+                    + ") t where rownum <= ?) where rn >= ?";
             params.add(offset + limit);
             params.add(offset + 1);
         } else {
             String windowOrderBy = normalizeOrderByForWindow(orderBySql);
             sql = "select * from (select t.*, ROW_NUMBER() OVER (" + windowOrderBy + ") as rn from ("
-                + baseSql + ") t) tt where tt.rn between ? and ?";
+                    + baseSql + ") t) tt where tt.rn between ? and ?";
             params.add(offset + 1);
             params.add(offset + limit);
         }
