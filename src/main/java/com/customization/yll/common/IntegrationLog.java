@@ -1,6 +1,7 @@
 package com.customization.yll.common;
 
 import com.alibaba.fastjson.JSON;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.helpers.FormattingTuple;
@@ -15,18 +16,21 @@ import weaver.integration.logging.Log4JLogger;
 public class IntegrationLog extends Log4JLogger {
     public static final String INTEGRATION = "integration";
     private final Logger log;
+    public static Level logLevel;
 
 
     public IntegrationLog(Class<?> cls) {
         this.setClassname(cls.getCanonicalName());
         this.init(INTEGRATION);
         log = org.apache.log4j.Logger.getLogger(INTEGRATION);
+        initLogLevel();
     }
 
     public IntegrationLog(String logName) {
         this.setClassname(logName);
         this.init(INTEGRATION);
         log = org.apache.log4j.Logger.getLogger(INTEGRATION);
+        initLogLevel();
     }
 
     public void debug(String  o, Object ...params) {
@@ -63,5 +67,11 @@ public class IntegrationLog extends Log4JLogger {
     @NotNull
     private String getMessage(String methodName, FormattingTuple ft) {
         return getClassname() + "." + methodName + "() - " + ft.getMessage();
+    }
+
+    private void initLogLevel() {
+        if (logLevel != null) {
+            this.log.setLevel(logLevel);
+        }
     }
 }
