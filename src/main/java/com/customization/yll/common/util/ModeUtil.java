@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import weaver.conn.RecordSet;
 import weaver.conn.RecordSetExecutionInterface;
 import weaver.formmode.setup.ModeRightInfo;
@@ -17,6 +18,7 @@ import weaver.integration.logging.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author 姚礼林
@@ -145,6 +147,23 @@ public class ModeUtil {
     }
 
     /**
+     * 插入建模数据，可用于执行事务
+     *
+     * @param fieldData               字段数据，key为字段名称，value为字段值
+     * @param tableName               建模表名称
+     * @param modeId                  建模id
+     * @param reconstructionJCOoption 执行权限重构选项，如果不需要执行权限重构，传入 null 即可
+     * @param recordSet               recordSet
+     * @return 新插入数据中的uuid，可以根据uuid查询到数据id，如果插入失败则返回 Optional.empty()
+     * @throws Exception 执行数据库发生异常
+     */
+    public static Optional<String> insertToMode(Map<String, Object> fieldData, String tableName, int modeId,
+                                                @Nullable ReconstructionJCOoption reconstructionJCOoption,
+                                                RecordSetExecutionInterface recordSet) throws Exception {
+        return insert(fieldData, tableName, modeId, reconstructionJCOoption, recordSet);
+    }
+
+    /**
      * 插入建模数据并获取新增的数据id
      *
      * @param fieldData 字段数据，key为字段名称，value为字段值
@@ -164,6 +183,30 @@ public class ModeUtil {
     }
 
     /**
+     * 插入建模数据并获取新增的数据id
+     *
+     * @param fieldData               字段数据，key为字段名称，value为字段值
+     * @param tableName               建模表名称
+     * @param modeId                  建模id
+     * @param reconstructionJCOoption 执行权限重构选项，如果不需要执行权限重构，传入 null 即可
+     * @param recordSet               recordSet
+     * @return 新增数据的数据id
+     * @throws Exception 执行数据库发生异常
+     */
+    public static Optional<Integer> insertToModeAndGetId(Map<String, Object> fieldData, String tableName, int modeId,
+                                                         @Nullable ReconstructionJCOoption reconstructionJCOoption,
+                                                         RecordSetExecutionInterface recordSet) throws Exception {
+        Optional<String> uuidOp = insert(fieldData, tableName, modeId,
+                reconstructionJCOoption, recordSet);
+        if (!uuidOp.isPresent()) {
+            logger.error("插入建模数据失败，tableName=" + tableName);
+            return Optional.empty();
+        }
+        return queryIdByUuid(tableName, uuidOp.get(), recordSet);
+    }
+
+
+    /**
      * 插入建模数据，可用于执行事务
      *
      * @param fieldData 字段数据，key为字段名称，value为字段值
@@ -174,7 +217,8 @@ public class ModeUtil {
      */
     public static boolean insertToModeByRsInterface(Map<String, Object> fieldData, String tableName, int modeId,
                                                     RecordSetExecutionInterface recordSet) throws Exception {
-        return insertToModeAndGetIdByRsInterface(fieldData, tableName, modeId, recordSet).isPresent();
+        return insert(fieldData, tableName, modeId, new ReconstructionJCOoption(true, true),
+                recordSet).isPresent();
     }
 
     /**
@@ -185,23 +229,13 @@ public class ModeUtil {
      * @param modeId    建模id
      * @param recordSet recordSet
      * @return 新增数据的数据id
+     * @throws Exception 执行数据库发生异常
      */
     public static Optional<Integer> insertToModeAndGetIdByRsInterface(Map<String, Object> fieldData,
                                                                       String tableName, int modeId,
                                                                       RecordSetExecutionInterface recordSet) throws Exception {
-        Map<String, Object> data = new HashMap<>(fieldData);
-        String uuid = UUID.randomUUID().toString();
-        addStanderFieldValue(data, modeId, uuid);
-        if (!DbUtil.insertByRsInterface(tableName, data, recordSet)) {
-            return Optional.empty();
-        }
-        // 执行权限重构
-        recordSet.executeSql("select id from " + tableName + " where modeuuid=?", true,
-                "", false, uuid);
-        recordSet.next();
-        int dataId = recordSet.getInt("id");
-        reconstructionJC(dataId, modeId, 1);
-        return Optional.of(dataId);
+        return insertToModeAndGetId(fieldData, tableName, modeId,
+                new ReconstructionJCOoption(true, true), recordSet);
     }
 
     /**
@@ -327,6 +361,53 @@ public class ModeUtil {
     }
 
     /**
+     * 插入建模数据
+     *
+     * @return 新增数据的uuid
+     */
+    private static Optional<String> insert(Map<String, Object> fieldData, String tableName, int modeId,
+                                           ReconstructionJCOoption reconstructionJCOoption,
+                                           RecordSetExecutionInterface recordSet) throws Exception {
+        Map<String, Object> data = new HashMap<>(fieldData);
+        String uuid = UUID.randomUUID().toString();
+        addStanderFieldValue(data, modeId, uuid);
+        if (!DbUtil.insertByRsInterface(tableName, data, recordSet)) {
+            return Optional.empty();
+        }
+        if (reconstructionJCOoption != null && reconstructionJCOoption.isReconstructionJC()) {
+            // 执行权限重构
+            Optional<Integer> id = queryIdByUuid(tableName, uuid, recordSet);
+            if (id.isPresent()) {
+                if (reconstructionJCOoption.async) {
+                    CompletableFuture.runAsync(() -> reconstructionJC(id.get(), modeId, 1));
+                } else {
+                    reconstructionJC(id.get(), modeId, 1);
+                }
+            } else {
+                logger.error("获取数据id失败，无法执行权限重构，uuid：" + uuid);
+            }
+
+        }
+        return Optional.of(uuid);
+    }
+
+    private Optional<Integer> queryIdByUuid(String tableName, String uuid, RecordSetExecutionInterface recordSet) {
+        try {
+            if (!recordSet.executeSql("select id from " + tableName + " where modeuuid=?", true,
+                    "", false, uuid)) {
+                logger.error("获取数据id失败，请到 ecology 日志查看详细错误信息，uuid：" + uuid);
+                return Optional.empty();
+            }
+            recordSet.next();
+            int dataId = recordSet.getInt("id");
+            return Optional.of(dataId);
+        } catch (Exception e) {
+            logger.error("根据uuid查询数据id发生异常，uuid：" + uuid, e);
+            return Optional.empty();
+        }
+    }
+
+    /**
      * 批量权限重构
      */
     private static void batchReconstructionJC(int modeId, List<Integer> ids) {
@@ -428,6 +509,19 @@ public class ModeUtil {
     public static class BatchInsertResult {
         private boolean success;
         private List<Integer> ids;
+    }
+
+    @AllArgsConstructor
+    @Data
+    public static class ReconstructionJCOoption {
+        /**
+         * 是否执行权限重构
+         */
+        private boolean isReconstructionJC;
+        /**
+         * 是否异步执行权限重构，权限重构可能会耗时比较久，可使用异步执行，无需等待权限重构完成
+         */
+        private boolean async;
     }
 
 }
