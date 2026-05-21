@@ -90,17 +90,17 @@ public class SqlUtil {
      * 生成sql更新语句，包括where部分，例如 update table_name1 set name=?,age=? where id=?，
      * 语句里使用了占位符，执行时请使用参数进行替换
      *
-     * @param data       更新数据，字段名与更新的值映射，也就是sql的set部分
-     * @param conditions 条件，不能为空，都为相等条件，如 name=? and age=?
-     * @param tableName  表名
-     * @param values     sql 占位符对应的值，当生成条件语句时会将条件中的值插入到此列表中
+     * @param data                  更新数据，字段名与更新的值映射，也就是sql的set部分
+     * @param conditions            条件，不能为空，都为相等条件，如 name=? and age=?
+     * @param tableName             表名
+     * @param whereConditionsValues sql 条件占位符对应的值，传入空列表即可，当生成条件语句时会将条件中的值插入到此列表中
      * @return 带where关键字的SQL部分
      */
     @NotNull
     public static String buildUpdateSql(Map<String, Object> data, Map<String, Object> conditions,
-                                        String tableName, List<Object> values) {
+                                        String tableName, List<Object> whereConditionsValues) {
         String sql = SqlUtil.buildUpdateSql(tableName, new ArrayList<>(data.keySet()));
-        String whereSql = SqlUtil.buildEqualsWhere(conditions, values);
+        String whereSql = SqlUtil.buildEqualsWhere(conditions, whereConditionsValues);
         sql += whereSql;
         return sql;
     }
