@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 /**
  * 流程工具类
+ *
  * @author yaolilin
  */
 @UtilityClass
@@ -49,33 +50,36 @@ public class WorkflowUtil {
 
     /**
      * 获取指定主表字段
+     *
      * @param requestId 请求id
      * @param fieldName 字段名
      * @param recordSet recordSet
      * @return 字段值
      */
-    public static String getMainFieldValue(int requestId, String fieldName,RecordSet recordSet) {
-        int workflowId = getWorkflowId(requestId,recordSet);
+    public static String getMainFieldValue(int requestId, String fieldName, RecordSet recordSet) {
+        int workflowId = getWorkflowId(requestId, recordSet);
         String tableName = getWorkflowTableName(workflowId, recordSet);
-        return getTableFieldValue(requestId, fieldName,tableName, recordSet);
+        return getTableFieldValue(requestId, fieldName, tableName, recordSet);
     }
 
     /**
      * 获取指定主表字段
+     *
      * @param requestId 请求id
-     * @param formId 表单id
+     * @param formId    表单id
      * @param fieldName 流程字段名称
      * @param recordSet recordSet
      * @return 字段值
      */
-    public static String getMainFieldValue(int requestId, int formId,String fieldName,RecordSet recordSet) {
-        String tableName = FormUtil.getFormTableName(formId,recordSet);
-        return getTableFieldValue(requestId, fieldName,tableName, recordSet);
+    public static String getMainFieldValue(int requestId, int formId, String fieldName, RecordSet recordSet) {
+        String tableName = FormUtil.getFormTableName(formId, recordSet);
+        return getTableFieldValue(requestId, fieldName, tableName, recordSet);
     }
 
     /**
      * 更新流程主表字段
-     * @param fieldData 字段数据
+     *
+     * @param fieldData   字段数据
      * @param requestInfo requestInfo
      * @return 是否成功
      */
@@ -127,8 +131,9 @@ public class WorkflowUtil {
 
     /**
      * 获取当行明细数据相应字段的值
+     *
      * @param fieldName 字段名
-     * @param c 列数组
+     * @param c         列数组
      * @return 字段值
      */
     public static String getDetailData(String fieldName, Cell[] c) {
@@ -143,46 +148,50 @@ public class WorkflowUtil {
 
     /**
      * 获取下拉框字段的选项显示名称
-     * @param tableName 流程表名
-     * @param fieldName 下拉框字段数据库名称
+     *
+     * @param tableName   流程表名
+     * @param fieldName   下拉框字段数据库名称
      * @param selectValue 下拉框选项id（值）
-     * @param recordSet recordSet
+     * @param recordSet   recordSet
      * @return 下拉框字段的选项显示名称
      */
-    public static String getSelectItemShowName(String tableName, String fieldName, int selectValue, RecordSet recordSet){
-       return FieldUtil.getSelectItemShowName(tableName,null,fieldName,selectValue,recordSet);
+    public static String getSelectItemShowName(String tableName, String fieldName, int selectValue, RecordSet recordSet) {
+        return FieldUtil.getSelectItemShowName(tableName, null, fieldName, selectValue, recordSet);
     }
 
     /**
      * 获取下拉框字段的选项显示名称
-     * @param tableName 流程表名
+     *
+     * @param tableName       流程表名
      * @param detailTableName 明细表名,如何是明细字段请填写
-     * @param fieldName 下拉框字段数据库名称
-     * @param selectValue 下拉框选项id（值）
-     * @param recordSet recordSet
+     * @param fieldName       下拉框字段数据库名称
+     * @param selectValue     下拉框选项id（值）
+     * @param recordSet       recordSet
      * @return 下拉框字段的选项显示名称
      */
-    public static String getSelectItemShowName(String tableName, String detailTableName,String fieldName,
-                                               int selectValue, RecordSet recordSet){
+    public static String getSelectItemShowName(String tableName, String detailTableName, String fieldName,
+                                               int selectValue, RecordSet recordSet) {
         return FieldUtil.getSelectItemShowName(tableName, detailTableName, fieldName, selectValue, recordSet);
     }
 
     /**
      * 获取下拉框字段的选项显示名称
-     * @param fieldId 下拉框字段id，id不需要加上“field”,只需要后面的数字
+     *
+     * @param fieldId     下拉框字段id，id不需要加上“field”,只需要后面的数字
      * @param selectValue 下拉框选项id（值）
-     * @param recordSet recordSet
+     * @param recordSet   recordSet
      * @return 下拉框字段的选项显示名称
      */
-    public static String getSelectItemShowName(int fieldId, int selectValue, RecordSet recordSet){
+    public static String getSelectItemShowName(int fieldId, int selectValue, RecordSet recordSet) {
         return FieldUtil.getSelectItemShowName(fieldId, selectValue, recordSet);
     }
 
     /**
      * 获取公共选择框的选项显示名称
-     * @param fieldId 字段id，对应 workflow_billfield 表的id
+     *
+     * @param fieldId     字段id，对应 workflow_billfield 表的id
      * @param selectValue 字段值
-     * @param recordSet recordSet
+     * @param recordSet   recordSet
      * @return 公共选择框的选项显示名称
      */
     public static String getPublicSelectorShowName(int fieldId, int selectValue, RecordSet recordSet) {
@@ -191,22 +200,24 @@ public class WorkflowUtil {
 
     /**
      * 流程是否归档
+     *
      * @param requestId 请求id
      * @param recordSet recordSet
      * @return 如果归档返回true
      */
     public static boolean isWorkflowFinished(int requestId, RecordSet recordSet) {
-        recordSet.executeQuery("select requestid from workflow_requestbase where requestid=? and currentnodetype='3'",requestId);
+        recordSet.executeQuery("select requestid from workflow_requestbase where requestid=? and currentnodetype='3'", requestId);
         return recordSet.next();
     }
 
     /**
      * 获取流程表单表名
+     *
      * @param workflowId 流程id
-     * @param recordSet recordSet
+     * @param recordSet  recordSet
      * @return 流程表单表名
      */
-    public static String getWorkflowTableName(int workflowId,RecordSet recordSet) {
+    public static String getWorkflowTableName(int workflowId, RecordSet recordSet) {
         recordSet.executeQuery("select b.tablename from workflow_base w,workflow_bill b where  " +
                 "w.id = ? AND w.formid = b.id", workflowId);
         recordSet.next();
@@ -215,6 +226,7 @@ public class WorkflowUtil {
 
     /**
      * 根据请求id获取流程表单表名
+     *
      * @param requestId 请求id
      * @param recordSet recordSet
      * @return 流程表单表名
@@ -230,6 +242,7 @@ public class WorkflowUtil {
 
     /**
      * 获取流程的归档时间，格式为yyyy-MM-dd HH:mm:ss，如果流程没有归档则返回空字符串
+     *
      * @param requestId 请求id
      * @param recordSet recordSet
      * @return 流程的归档时间
@@ -245,6 +258,7 @@ public class WorkflowUtil {
 
     /**
      * 获取流程请求名称
+     *
      * @param requestId 请求id
      * @param recordSet recordSet
      * @return 流程请求名称
@@ -257,6 +271,7 @@ public class WorkflowUtil {
 
     /**
      * 获取流程创建人id
+     *
      * @param requestId 请求id
      * @param recordSet recordSet
      * @return 流程创建人id
@@ -269,12 +284,13 @@ public class WorkflowUtil {
 
     /**
      * 判断当前流程id是否属于某个流程id现在或者后面的版本
+     *
      * @param compareWorkflowId 对比的流程id，当前流程id要属于这个流程id的现在或后面的版本
      * @param currentWorkflowId 当前流程id
      * @return 当前流程id是否属于某个流程id的后面版本
      */
     public static boolean isCurrentOrAfterWorkflowVersion(int compareWorkflowId, int currentWorkflowId) {
-        WorkflowVersion workflowVersion = new WorkflowVersion(currentWorkflowId+"");
+        WorkflowVersion workflowVersion = new WorkflowVersion(currentWorkflowId + "");
         List<Map<String, String>> allVersionList = workflowVersion.getAllVersionList();
         for (Map<String, String> versionItem : allVersionList) {
             int workflowId = Integer.parseInt(versionItem.get("id"));
@@ -287,6 +303,7 @@ public class WorkflowUtil {
 
     /**
      * 获取指定流程版本的流程id后面版本的流程id，例如获取v1后面版本的流程id，将返回v2,v3,v4版本的流程id
+     *
      * @param versionWorkflowId 指定流程版本的流程id
      * @return 后面版本的流程id
      */
@@ -298,6 +315,7 @@ public class WorkflowUtil {
 
     /**
      * 获取指定流程版本的流程id前面版本的流程id，例如获取v4前面版本的流程id，将返回v3,v2,v1版本的流程id
+     *
      * @param versionWorkflowId 指定流程版本的流程id
      * @return 前面版本的流程id
      */
@@ -309,12 +327,13 @@ public class WorkflowUtil {
 
     /**
      * 获取指定流程的所有流程版本的流程id
+     *
      * @param workflowId 指定流程id
      * @return 所有流程版本的流程id
      */
     public static List<Integer> getAllVersionsWorkflowIds(int workflowId) {
         List<Integer> result = new ArrayList<>();
-        WorkflowVersion workflowVersion = new WorkflowVersion(workflowId+"");
+        WorkflowVersion workflowVersion = new WorkflowVersion(workflowId + "");
         List<Map<String, String>> allVersionList = workflowVersion.getAllVersionList();
         for (Map<String, String> versionItem : allVersionList) {
             int wId = Integer.parseInt(versionItem.get("id"));
@@ -331,11 +350,12 @@ public class WorkflowUtil {
 
     /**
      * 根据表单id获取流程id，只获取生效版本的流程id
-     * @param formId 表单id
+     *
+     * @param formId    表单id
      * @param recordSet recordSet
      * @return 流程id
      */
-    public static Optional<Integer> getWorkflowIdByFormId(int formId,RecordSet recordSet) {
+    public static Optional<Integer> getWorkflowIdByFormId(int formId, RecordSet recordSet) {
         recordSet.executeQuery("select id,activeversionid " +
                 "from workflow_base where formid=?", formId);
         if (!recordSet.next()) {
@@ -348,12 +368,50 @@ public class WorkflowUtil {
     }
 
     /**
-     * 获取流程节点信息
-     * @param workflowId 流程id
+     * 根据表单id获取流程id
+     *
+     * @param formId    表单id
      * @param recordSet recordSet
+     * @return 流程id集合，可能存在多个流程id，例如一个表单对应多个流程版本的情况
+     */
+    public static List<Integer> getWorkflowIdsByFormId(int formId, RecordSet recordSet) {
+        List<Integer> result = new ArrayList<>();
+        if (!recordSet.executeQuery("select id from workflow_base where formid=?", formId)) {
+            log.error("查询流程id出错，sql错误 ，formId:" + formId);
+            return result;
+        }
+        while (recordSet.next()) {
+            result.add(recordSet.getInt("id"));
+        }
+        return result;
+    }
+
+    /**
+     * 根据流程id获取表单id
+     *
+     * @param workflowId 流程id
+     * @param recordSet  recordSet
+     * @return 表单id
+     */
+    public static Optional<Integer> getFormIdByWorkflowId(int workflowId, RecordSet recordSet) {
+        if (!recordSet.executeQuery("select formid from workflow_base where id=?", workflowId)) {
+            log.error("查询表单id出错，sql错误 ，workflowId:" + workflowId);
+            return Optional.empty();
+        }
+        if (!recordSet.next()) {
+            return Optional.empty();
+        }
+        return Optional.of(recordSet.getInt("formid"));
+    }
+
+    /**
+     * 获取流程节点信息
+     *
+     * @param workflowId 流程id
+     * @param recordSet  recordSet
      * @return 流程节点信息列表
      */
-    public static List<WorkflowNodeInfo> getNodeList(int workflowId,RecordSet recordSet) {
+    public static List<WorkflowNodeInfo> getNodeList(int workflowId, RecordSet recordSet) {
         List<WorkflowNodeInfo> result = new ArrayList<>();
         recordSet.executeQuery("SELECT b.id,b.nodename,b.nodeattribute,n.nodetype " +
                 "FROM workflow_flownode n JOIN workflow_nodebase b ON n.nodeid=b.id " +
@@ -371,8 +429,9 @@ public class WorkflowUtil {
 
     /**
      * 获取流程创建节点信息
+     *
      * @param workflowId 流程id
-     * @param recordSet recordSet
+     * @param recordSet  recordSet
      * @return 流程创建节点信息
      */
     @Nullable
@@ -388,17 +447,18 @@ public class WorkflowUtil {
 
     /**
      * 获取当前流程的节点操作id，为workflow_currentoperator表的id
+     *
      * @param receiveUserId 节点接收者id
-     * @param nodeId 节点id
-     * @param requestId 请求id
-     * @param recordSet recordSet
+     * @param nodeId        节点id
+     * @param requestId     请求id
+     * @param recordSet     recordSet
      * @return 当前流程的节点操作id
      */
     public static Optional<Integer> getCurrentOperateId(int receiveUserId, int nodeId,
                                                         int requestId, RecordSet recordSet) {
         recordSet.executeQuery("SELECT id from workflow_currentoperator " +
-                "where requestid=? and nodeid=? and userid=? and islasttimes=1 order by id desc",
-                requestId,nodeId,receiveUserId);
+                        "where requestid=? and nodeid=? and userid=? and islasttimes=1 order by id desc",
+                requestId, nodeId, receiveUserId);
         if (!recordSet.next()) {
             return Optional.empty();
         }
@@ -407,13 +467,14 @@ public class WorkflowUtil {
 
     /**
      * 获取指定已流转的节点的操作者id，如果没有找到则返回空列表
+     *
      * @param requestId 请求id
-     * @param nodeId 节点id
-     * @param isRemark 指定操作类型，只获取该操作类型的操作者,如果传空则不指定
+     * @param nodeId    节点id
+     * @param isRemark  指定操作类型，只获取该操作类型的操作者,如果传空则不指定
      * @param recordSet recordSet
      * @return 节点的操作者id列表
      */
-    public static List<Integer> getFlowedNodeOperatorIds(int requestId, int nodeId,@Nullable Integer isRemark,
+    public static List<Integer> getFlowedNodeOperatorIds(int requestId, int nodeId, @Nullable Integer isRemark,
                                                          RecordSet recordSet) {
         List<Integer> operatorIds = new ArrayList<>();
         String sql = "SELECT a.userid FROM workflow_currentoperator a " +
@@ -430,8 +491,9 @@ public class WorkflowUtil {
 
     /**
      * 获取流程当前节点操作者id，如果没有找到则返回空列表
+     *
      * @param requestId 请求id
-     * @param isRemark 指定操作类型，只获取该操作类型的操作者，如果传空则不指定
+     * @param isRemark  指定操作类型，只获取该操作类型的操作者，如果传空则不指定
      * @param recordSet recordSet
      * @return 流程当前节点操作者id集合
      */
@@ -453,6 +515,7 @@ public class WorkflowUtil {
 
     /**
      * 获取当前流程节点id，不适用于分叉等多个节点的情况
+     *
      * @param requestId 请求id
      * @param recordSet recordSet
      * @return 当前流程节点id
@@ -465,6 +528,7 @@ public class WorkflowUtil {
 
     /**
      * 获取当前流程节点id，适用于分叉等多个节点的情况
+     *
      * @param requestId 请求id
      * @param recordSet recordSet
      * @return 前流程所处节点id集合
@@ -480,8 +544,9 @@ public class WorkflowUtil {
 
     /**
      * 是否是公文流程
+     *
      * @param workflowId 流程id
-     * @param recordSet recordSet
+     * @param recordSet  recordSet
      * @return 如果是公文流程返回true
      */
     public static boolean isOdcWorkflow(int workflowId, RecordSet recordSet) {
@@ -498,11 +563,12 @@ public class WorkflowUtil {
 
     /**
      * 获取流程附件存放知识目录id
+     *
      * @param workflowId 流程id
-     * @param recordSet recordSet
+     * @param recordSet  recordSet
      * @return Optional 知识目录id
      */
-    public static Optional<Integer> getAttachmentSaveDirId(int workflowId,RecordSet recordSet) {
+    public static Optional<Integer> getAttachmentSaveDirId(int workflowId, RecordSet recordSet) {
         recordSet.executeQuery("select doccategory from workflow_base where id=?",
                 workflowId);
         recordSet.next();
@@ -521,7 +587,7 @@ public class WorkflowUtil {
         return Optional.of(Integer.parseInt(doccategory));
     }
 
-    private static String getTableFieldValue(int requestId, String fieldName,String tableName, RecordSet recordSet) {
+    private static String getTableFieldValue(int requestId, String fieldName, String tableName, RecordSet recordSet) {
         if (!recordSet.executeQuery("select " + fieldName + " from " + tableName + " where requestid=?", requestId)) {
             log.error("查询流程字段值出错，sql错误");
             return "";
