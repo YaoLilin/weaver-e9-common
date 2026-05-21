@@ -43,7 +43,10 @@ public class DocFileManager {
         // 根据 imagefileid 去重，因为可能有垃圾数据导致重复
         Set<DocFileInfo> docFileInfosSet = new HashSet<>(docFileInfos);
         for (DocFileInfo fileInfo : docFileInfosSet) {
-            String imageFilePath = saveDirPath + getSeparator() + fileInfo.getFileName();
+            String fileName = fileInfo.getFileName();
+            // 去除斜杠，防止保存文件出错
+            fileName = fileName.replace("/", "");
+            String imageFilePath = saveDirPath + getSeparator() + fileName;
             if (Files.exists(Paths.get(imageFilePath))) {
                 imageFilePath = saveDirPath + getSeparator() + fileInfo.getImageFileId() +
                         "-" + fileInfo.getVersionId() + "-" + fileInfo.getFileName();
