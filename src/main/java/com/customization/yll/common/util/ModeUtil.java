@@ -3,6 +3,7 @@ package com.customization.yll.common.util;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.StrUtil;
+import com.customization.yll.common.IntegrationLog;
 import com.customization.yll.common.bean.SearchPageFieldInfo;
 import com.customization.yll.common.exception.SqlExecuteException;
 import lombok.AllArgsConstructor;
@@ -13,8 +14,6 @@ import org.jetbrains.annotations.Nullable;
 import weaver.conn.RecordSet;
 import weaver.conn.RecordSetExecutionInterface;
 import weaver.formmode.setup.ModeRightInfo;
-import weaver.integration.logging.Logger;
-import weaver.integration.logging.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -27,7 +26,7 @@ import java.util.concurrent.CompletableFuture;
  */
 @UtilityClass
 public class ModeUtil {
-    private static final Logger logger = LoggerFactory.getLogger(ModeUtil.class);
+    private static final IntegrationLog logger = new IntegrationLog(ModeUtil.class);
 
     /**
      * 根据建模表名获取到对应的建模id
@@ -368,10 +367,12 @@ public class ModeUtil {
     private static Optional<String> insert(Map<String, Object> fieldData, String tableName, int modeId,
                                            ReconstructionJCOoption reconstructionJCOoption,
                                            RecordSetExecutionInterface recordSet) throws Exception {
+        logger.debug("表名：{}, modeId: {}, 插入数据：{}", tableName, modeId, logger.toJsonStr(fieldData));
         Map<String, Object> data = new HashMap<>(fieldData);
         String uuid = UUID.randomUUID().toString();
         addStanderFieldValue(data, modeId, uuid);
         if (!DbUtil.insertByRsInterface(tableName, data, recordSet)) {
+            logger.error("插入失败");
             return Optional.empty();
         }
         if (reconstructionJCOoption != null && reconstructionJCOoption.isReconstructionJC()) {

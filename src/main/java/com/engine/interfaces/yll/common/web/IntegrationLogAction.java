@@ -6,6 +6,7 @@ import com.customization.yll.common.IntegrationLog;
 import com.customization.yll.common.web.WebExceptionHandler;
 import com.customization.yll.common.web.modal.vo.ApiResult;
 import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -35,6 +36,11 @@ public class IntegrationLogAction {
                         .entity(ApiResult.failed("level 格式错误")).build();
             }
             IntegrationLog.logLevel = levelObj;
+
+            Logger logger = Logger.getLogger("integration");
+            logger.setLevel(levelObj);
+            // 设置根 Logger
+            Logger.getRootLogger().setLevel(levelObj);
             return Response.ok().entity(ApiResult.success("修改日志级别成功")).build();
         } catch (Exception e) {
             return WebExceptionHandler.handle(e);
