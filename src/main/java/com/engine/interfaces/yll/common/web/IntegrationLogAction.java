@@ -36,7 +36,6 @@ public class IntegrationLogAction {
                         .entity(ApiResult.failed("level 格式错误")).build();
             }
             IntegrationLog.logLevel = levelObj;
-
             Logger logger = Logger.getLogger("integration");
             logger.setLevel(levelObj);
             // 设置根 Logger

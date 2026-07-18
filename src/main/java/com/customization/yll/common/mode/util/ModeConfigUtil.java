@@ -1,6 +1,7 @@
 package com.customization.yll.common.mode.util;
 
 import cn.hutool.core.util.StrUtil;
+import com.customization.yll.common.IntegrationLog;
 import com.customization.yll.common.exception.PropNotConfigureException;
 import com.customization.yll.common.util.CacheUtil;
 import lombok.experimental.UtilityClass;
@@ -14,6 +15,7 @@ import weaver.conn.RecordSet;
  **/
 @UtilityClass
 public class ModeConfigUtil {
+    public static final IntegrationLog LOG = new IntegrationLog(ModeConfigUtil.class);
     public static final String TABLE_NAME = "uf_config_center";
     public static final String PREFIX_CACHE_KEY = "config:";
     /**
@@ -29,10 +31,15 @@ public class ModeConfigUtil {
      */
     public static String getPropValue(String configId,String propName) {
         RecordSet recordSet = new RecordSet();
-        recordSet.executeQuery("select m.value from uf_config_center z join uf_config_center_dt1 m " +
-                "on z.id = m.mainid where z.config_id=? and m.name=?",configId,propName);
-        recordSet.next();
-        return recordSet.getString("value");
+        if (!recordSet.executeQuery("select m.value from uf_config_center z join uf_config_center_dt1 m " +
+                "on z.id = m.mainid where z.config_id=? and m.name=?",configId,propName)) {
+            LOG.error("获取建模配置属性值失败，请检查建模是否已导入");
+            return "";
+        }
+        if (recordSet.next()) {
+            return recordSet.getString("value");
+        }
+        return "";
     }
 
     /**

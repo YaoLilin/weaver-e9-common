@@ -140,6 +140,7 @@ public class DbLock implements AutoCloseable {
             return recordSet.execute(sql);
         } catch (Exception e) {
             // 主键冲突或其它异常，表示锁已被其它线程持有
+            log.error("尝试获取锁失败，lockName: {}, lockedBy: {}, error: {}", lockName, lockedBy, e.getMessage(),e);
             return false;
         }
     }
@@ -173,7 +174,7 @@ public class DbLock implements AutoCloseable {
             String sql = "CREATE TABLE " + LOCK_TABLE_NAME + " ("
                     + "lock_name VARCHAR(200) NOT NULL PRIMARY KEY, "
                     + "locked_at NUMERIC(20) NOT NULL, "
-                    + "locked_by VARCHAR(100))";
+                    + "locked_by VARCHAR(500))";
             try {
                 RecordSet rs = new RecordSet();
                 if (!rs.execute(sql)) {
@@ -192,14 +193,19 @@ public class DbLock implements AutoCloseable {
     /**
      * 构建锁定者标识，用于排查问题
      *
-     * @return 主机名-线程名 格式的字符串
+     * @return 主机名-线程名 格式的字符串，超过 100 字符则截断
      */
     private static String buildLockedBy() {
+        String lockedBy;
         try {
-            return InetAddress.getLocalHost().getHostName() + "-" + Thread.currentThread().getName();
+            lockedBy = InetAddress.getLocalHost().getHostName() + "-" + Thread.currentThread().getName();
         } catch (Exception e) {
-            return Thread.currentThread().getName();
+            lockedBy = Thread.currentThread().getName();
         }
+        if (lockedBy.length() > 100) {
+            lockedBy = lockedBy.substring(0, 100);
+        }
+        return lockedBy;
     }
 
     private static void sleep(long millis) {

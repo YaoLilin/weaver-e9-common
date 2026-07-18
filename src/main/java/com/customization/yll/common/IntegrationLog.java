@@ -34,12 +34,14 @@ public class IntegrationLog extends Log4JLogger {
     }
 
     public void debug(String  o, Object ...params) {
+        setLogLevel();
         FormattingTuple ft = MessageFormatter.arrayFormat(o, params);
         String methodName = Thread.currentThread().getStackTrace()[2].getMethodName();
         this.log.debug(getMessage(methodName, ft), ft.getThrowable());
     }
 
     public void info(String  o,Object ...params) {
+        setLogLevel();
         FormattingTuple ft = MessageFormatter.arrayFormat(o, params);
         String methodName = Thread.currentThread().getStackTrace()[2].getMethodName();
         this.log.info(getMessage(methodName, ft), ft.getThrowable());
@@ -52,6 +54,7 @@ public class IntegrationLog extends Log4JLogger {
     }
 
     public void warn(String o, Object... params) {
+        setLogLevel();
         FormattingTuple ft = MessageFormatter.arrayFormat(o, params);
         String methodName = Thread.currentThread().getStackTrace()[2].getMethodName();
         this.log.warn(getMessage(methodName, ft), ft.getThrowable());
@@ -71,6 +74,12 @@ public class IntegrationLog extends Log4JLogger {
 
     private void initLogLevel() {
         if (logLevel != null) {
+            this.log.setLevel(logLevel);
+        }
+    }
+
+    private void setLogLevel() {
+        if (logLevel != null && logLevel != this.log.getLevel()) {
             this.log.setLevel(logLevel);
         }
     }
