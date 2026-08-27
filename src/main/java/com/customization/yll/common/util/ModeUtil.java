@@ -2,6 +2,7 @@ package com.customization.yll.common.util;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import com.customization.yll.common.IntegrationLog;
 import com.customization.yll.common.bean.SearchPageFieldInfo;
@@ -27,6 +28,8 @@ import java.util.concurrent.CompletableFuture;
 @UtilityClass
 public class ModeUtil {
     private static final IntegrationLog logger = new IntegrationLog(ModeUtil.class);
+    private static final String UPDATE_TIME_FIELD = "modedatamodifydatetime";
+    private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     /**
      * 根据建模表名获取到对应的建模id
@@ -346,6 +349,24 @@ public class ModeUtil {
     public static boolean updateMode(Map<String, Object> data, int dataId, String tableName, RecordSet recordSet) {
         Map<String, Object> condition = new HashMap<>(1);
         condition.put("id", dataId);
+        return updateMode(data, condition, tableName, recordSet);
+    }
+
+    /**
+     * 根据条件更新建模数据，更新条件可为多个
+     *
+     * @param data      更新数据
+     * @param condition 更新条件，多个 AND 条件，如：{"code":"A01","name":"one"}
+     * @param tableName 建模表名
+     * @param recordSet recordSet
+     * @return 是否成功
+     */
+    public static boolean updateMode(Map<String, Object> data, Map<String, Object> condition,
+                                     String tableName, RecordSet recordSet) {
+        if (!data.containsKey(UPDATE_TIME_FIELD)) {
+            String updateTime = DateUtil.format(new Date(), DATE_TIME_FORMAT);
+            data.put(UPDATE_TIME_FIELD, updateTime);
+        }
         return DbUtil.update(data, condition, tableName, recordSet);
     }
 

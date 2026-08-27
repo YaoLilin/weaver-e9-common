@@ -410,7 +410,6 @@ public class ApiCallManager {
         try (Response response = uploadFile(apiUrl, parts, header)) {
             if (!response.isSuccessful()) {
                 log.error("文件上传失败：" + response);
-                return "";
             }
             if (response.body() == null) {
                 return "";

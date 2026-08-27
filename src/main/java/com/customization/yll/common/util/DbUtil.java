@@ -1,6 +1,7 @@
 package com.customization.yll.common.util;
 
 import cn.hutool.core.collection.CollUtil;
+import com.alibaba.fastjson.JSON;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -99,7 +100,15 @@ public class DbUtil {
             logger.error("更新错误，更新条件数量与更新数据数量不一致");
             return false;
         }
-        RecordSet recordSet = new RecordSet();
+        return batchUpdate(updateDataList, conditionList, tableName, getRecordSet());
+    }
+
+    /**
+     * 大批量数据更新，支持传入 RecordSet 用于事务控制及单元测试。
+     */
+    static boolean batchUpdate(List<Map<String, Object>> updateDataList,
+                               List<Map<String, Object>> conditionList,
+                               @NotNull String tableName, RecordSet recordSet) {
         List<List> values = new ArrayList<>();
         String sql = null;
         for (int i = 0; i < updateDataList.size(); i++) {
@@ -115,6 +124,9 @@ public class DbUtil {
             values.add(valuesItem);
         }
         logger.info("sql:" + sql);
+        logger.debug("更新数据：" + JSON.toJSONString(updateDataList));
+        logger.debug("更新条件：" + JSON.toJSONString(conditionList));
+        logger.debug("占位符值列表：" + values);
         return recordSet.executeBatchSql(sql, values);
     }
 
@@ -166,6 +178,10 @@ public class DbUtil {
             logger.debug("批量插入返回结果：" + Arrays.toString(results));
         }
         return results != null && results.length > 0;
+    }
+
+    protected static RecordSet getRecordSet() {
+        return new RecordSet();
     }
 
 
